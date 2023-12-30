@@ -11,7 +11,7 @@
             "xpath": ""
         },
         "products": {
-            "xpath": "//div[@itemtype='http://schema.org/ItemList']/div//a[@class='p-0']"
+            "xpath": "//div[@itemtype='http://schema.org/ItemList']//a[@class='p-0 product-image-link']"
         },
         "next_page": {
             "xpath": "//div[contains(@class,'pagination')]//a[contains(.,'Next')]/@class[not(contains(.,'disabled'))]/parent::a"

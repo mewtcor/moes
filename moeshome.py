@@ -17,6 +17,7 @@ import undetected_chromedriver as uc
 
 
 products = []
+product_info = {}
 tmp_var1 = ""
 tmp_var2=""
 tmp_varLabel1 = ""
@@ -36,7 +37,7 @@ test4 = "https://www.moeshome.com/living-room/sofas/abigail-chaise-orange-me1053
 test5 = "https://www.moeshome.com/living-room/sectionals/jamara-left-facing-sectional-charcoal-grey-ub101607l" # missing product
 
 TEST_URLS = [test1]
-TEST_MODE = True
+TEST_MODE = False
 
 with open('3-2config.json', 'r') as f:
     config_json = json.load(f)
@@ -96,7 +97,7 @@ def chr_driver():
     # op.add_argument("window-size=1920x1080")
     op.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
     # op.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2}) # disable images
-    serv = Service(r'C:\Users\mewtc\work\vesta\chromedriver')
+    serv = Service(r'/home/m3wt/vesta/python/scrapers/chromedriver')
     h_mode = input('mode ([h]headless | [f]full): ')
     op.headless = h_mode == 'h'
     if not op.headless:
@@ -106,30 +107,6 @@ def chr_driver():
     logging.debug('Using Selenium WebDriver with Chrome browser')
     browser = webdriver.Chrome(service=serv, options=op)
     return browser
-
-# def chr_driver():
-#     op = uc.ChromeOptions()
-#     op.add_argument("--disable-blink-features")
-#     op.add_argument("--disable-blink-features=AutomationControlled")
-#     op.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
-#     op.add_argument("--no-sandbox")
-#     op.add_argument("--disable-extensions")
-#     op.add_argument("--dns-prefetch-disable")
-#     op.add_argument("--disable-gpu")
-#     op.add_argument("--start-maximized")
-
-#     serv = Service(r'C:\Users\mewtc\work\vesta\chromedriver')
-#     h_mode = input('mode ([h]headless | [f]full): ')
-#     op.headless = h_mode == 'h'
-#     if not op.headless:
-#         if h_mode != 'f':
-#             logging.warning('check driver headless option')
-
-#     logging.debug('Using Selenium WebDriver with Chrome browser')
-#     browser = uc.Chrome(service=serv, options=op)
-
-#     return browser
-
 
 def scrape_initial_page():
     tmp_cat1 = ""
@@ -345,15 +322,9 @@ def extract_data(cat1, cat2):
     # viewMoreSpecs() # view more specs
     global product_info
     global product_counter
-    # if checkVar == True:
-    #     pcode = get_element_attribute(product_code_xpath, "textContent") + " - " +  tmp_var1
-    # else:
-    #     pcode = get_element_attribute(product_code_xpath, "textContent")
     pcode = get_element_attribute(product_code_xpath, "textContent").strip()
     if pcode not in [product['product_code'] for product in products]:
         pname = get_element_attribute(product_name_xpath, "textContent")
-        # category1 = get_element_attribute(product_category1_xpath, "textContent")
-        # category2 = get_element_attribute(product_category2_xpath, "textContent")
         category1 = cat1
         category2 = cat2
         getImages()
@@ -428,30 +399,6 @@ def extract_data(cat1, cat2):
             'supplier': supplier
 
         }
-        # product_info['variant1'] = tmp_var1
-        # product_info['variantLabel1'] = tmp_varLabel1
-        # product_info['swatch_image1'] = tmp_swatch_image1
-        # product_info['variant2'] = tmp_var2
-        # product_info['variantLabel2'] = tmp_varLabel2
-        # product_info['swatch_image2'] = tmp_swatch_image2
-
-        # product_info['variant1'] = tmp_var1 if tmp_var1 else ''
-        # product_info['variantLabel1'] = tmp_varLabel1 if tmp_varLabel1 else ''
-        # product_info['swatch_image1'] = swatch_image1 if swatch_image1 else ''
-
-
-        # image_lst = getImages()
-        # # Define the maximum number of iterations ex. max_iterations = 20 OPTIONAL
-        # # Loop through the list of images and assign to corresponding variables
-        # for i in range(len(image_lst)):
-        #     if i <= len(image_lst):
-        #         match = re.search(r'^([^ ]+)', image_lst[i])
-        #         if match:
-        #             product_info[f'image{i+1}']  = match.group(1)
-        #         else:
-        #             product_info[f'image{i+1}']  = ""            
-        #     else:
-        #         product_info[f'image{i+1}'] = ""
 
         image_lst = getImages()
         # Define the maximum number of iterations
@@ -468,108 +415,7 @@ def extract_data(cat1, cat2):
         #call pagination function
         # pagination()
     else:
-        print('Product code already scraped. Skipping...')
-
-# def get_variants(cat1, cat2):
-#     global tmp_var1, tmp_var2, tmp_varLabel1, tmp_varLabel2, tmp_swatch_image1, tmp_swatch_image2
-#     count_var = 0
-#     # global var_list
-#     count_var_elem = driver.find_elements(By.XPATH, variants_xpath)
-#     count_var = len(count_var_elem)
-#     if count_var == 1:
-#         var_elem1 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]")
-#         var_elem1_lst = var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")
-#         for i in range(0, len(var_elem1_lst)):
-#             # scroll to the top of the page
-#             driver.execute_script("window.scrollTo(0, 0)")
-#             # sleep(1)
-#             try: # catch page not found errors
-#                 var_elem1 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]")
-#             except:
-#                 break
-#             # var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")[i].click()
-#             try:
-#                 var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")[i].click()
-#             except:
-#                 print('disabled element skipping click event')
-#                 break
-#             sleep(1)
-#             viewMoreSpecs()
-#             try: #catch PAGE NOT FOUND errors
-#                 var_elem1 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]")
-#             except:
-#                 break
-#             tmp_var1 = var_elem1.find_element(By.XPATH,"./div[1]/span[2]").get_attribute("textContent")
-#             varLabel1_elem = var_elem1.find_element(By.XPATH,"./div[1]/span[1]")
-#             tmp_varLabel1 = varLabel1_elem.get_attribute('textContent')
-#             try:
-#                 tmp_swatch_image1 = var_elem1.find_element(By.XPATH,"./div[2]/div/@class[contains(.,'active')]/parent::div/img").get_attribute('src')
-
-#             except:
-#                 tmp_swatch_image1 =""
-#             extract_data(cat1, cat2)
-#     elif count_var == 2:
-#         var_elem1 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]")
-#         var_elem1_lst = var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")
-#         for i in range(0, len(var_elem1_lst)):
-#             # scroll to the top of the page
-#             driver.execute_script("window.scrollTo(0, 0)")
-#             # sleep(1)
-#             try: #catch page not found errors
-#                 var_elem1 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]")
-#             except:
-#                 print('var_elem1 break')
-#                 break
-#             # var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")[i].click()
-#             try:
-#                 var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")[i].click()
-#             except:
-#                 print('disabled element skipping click event')
-#                 break
-#             # var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")[i].click()
-#             sleep(1)
-#             viewMoreSpecs()
-
-#             try: #catch page not found errors
-#                 var_elem1 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[1]")
-#             except:
-#                 break
-#             tmp_var1 = var_elem1.find_element(By.XPATH,"./div[1]/span[2]").get_attribute("textContent")
-#             varLabel1_elem = var_elem1.find_element(By.XPATH,"./div[1]/span[1]")
-#             tmp_varLabel1 = varLabel1_elem.get_attribute('textContent')
-#             try:
-#                 tmp_swatch_image1 = var_elem1.find_element(By.XPATH,"./div[2]/div/@class[contains(.,'active')]/parent::div/img").get_attribute('src')
-
-#             except:
-#                 tmp_swatch_image1 =""
-#             try: #catch page not found errors
-#                 var_elem2 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[2]")
-#             except:
-#                 break
-#             var_elem2_lst = var_elem2.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")
-#             for i in range(0, len(var_elem2_lst)):
-#                 driver.execute_script("window.scrollTo(0, 0)") # scroll to the top of the page
-#                 # sleep(1)
-#                 try:
-#                     var_elem2.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")[i].click()
-#                 except:
-#                     print('disabled element skipping click event')
-#                     break
-#                 sleep(1)
-#                 viewMoreSpecs()
-#                 try: #catch page not found errors
-#                     var_elem2 = driver.find_element(By.XPATH, "//div[@id='product-arrangement-and-colors-wrapper']/div/div/div[2]")
-#                 except:
-#                     break
-#                 tmp_var2 = var_elem2.find_element(By.XPATH,"./div[1]/span[2]").get_attribute("textContent")
-#                 varLabel2_elem = var_elem2.find_element(By.XPATH,"./div[1]/span[1]")
-#                 tmp_varLabel2 = varLabel2_elem.get_attribute('textContent')
-#                 try: 
-#                     tmp_swatch_image2 = var_elem2.find_element(By.XPATH,"./div[2]/div/@class[contains(.,'active')]/parent::div/img").get_attribute('src')
-
-#                 except:
-#                     tmp_swatch_image1 =""
-#                 extract_data(cat1, cat2)
+        print('Product code exists. Skipping...')
 
 ### -------------- refactored get_variants()
 def get_variants(cat1, cat2):
@@ -735,6 +581,8 @@ def allowCookie():
         )
     cookie_btn.click()
  
+import time
+
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
                         datefmt='%d-%m-%Y:%H:%M:%S',
@@ -756,7 +604,14 @@ if __name__ == '__main__':
     else:
         logging.debug(f'Parsing initial URL: {initial_url}')
         driver.get(initial_url)
-        sleep(40)      
+        countdown_duration = 10  # Set the countdown duration in seconds
+
+        # Countdown timer
+        # print(f"Waiting for {countdown_duration} seconds...")
+        for remaining_time in range(countdown_duration, 0, -1):
+            print(f"Scraper will run in: {remaining_time} seconds", end='\r')
+            time.sleep(1)
+
         # login(un,pw)
         # allowCookie()
         category1_urls = scrape_initial_page()
@@ -765,4 +620,5 @@ if __name__ == '__main__':
         scrape_prod_links()
     save()
     driver.quit()
+
 
