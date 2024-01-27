@@ -5,8 +5,9 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.common.exceptions import StaleElementReferenceException
+import selenium.common.exceptions
 from time import sleep
 import csv
 import datetime
@@ -14,7 +15,10 @@ import logging
 import re
 import json
 import undetected_chromedriver as uc
-
+import time
+import pygame
+from pynput import keyboard
+import os
 
 products = []
 product_info = {}
@@ -28,20 +32,28 @@ tmp_swatch_image2 = ""
 # -------------- USER INPUT
 # un = "customer"
 # pw = "123456"
-filename = 'moeshome-full'
 
 test1 = "https://www.moeshome.com/living-room/sofas/rodrigo-sofa-black" # no variant
 test2 = "https://www.moeshome.com/benches-stools/lund-stool-black-oak-bc112602" # 1 row variants
 test3 = "https://www.moeshome.com/dining-room/dining-tables/malibu-round-dining-table-natural" # 2-row variants
 test4 = "https://www.moeshome.com/living-room/sofas/abigail-chaise-orange-me105312" # variant 2 - page not found
 test5 = "https://www.moeshome.com/living-room/sectionals/jamara-left-facing-sectional-charcoal-grey-ub101607l" # missing product
-
-TEST_URLS = [test1]
-TEST_MODE = False
+test6 = "https://www.moeshome.com/endora-bench-cappuccino-pk110514" #missing product
+test7 = "https://www.moeshome.com/living-room/sectionals/corey-left-facing-sectional-beige-mt100229l"
+test8 = "https://www.moeshome.com/luzon-queen-bed-fabric-wheat-rn112934"
+test9 = ""
+test10 =  "https://www.moeshome.com/dressers-chests/vienna-dresser-light-brown" #empty page
+test11 = "https://www.moeshome.com/office/office-desks/nailed-desk-light-brown-lx104403"
+test12 = "https://www.moeshome.com/bedroom/beds/ichigo-queen-bed-light-grey-oa1002290"
+test13 = "https://www.moeshome.com/benches-stools/place-dining-bench-rust-eh111322"
+TEST_URLS = [test13]
 
 with open('3-2config.json', 'r') as f:
     config_json = json.load(f)
     #----------------------- links
+    test_mode = (config_json['test_mode'])
+    filename = (config_json['filename'])
+    play_alarm = (config_json['play_alarm'])
     initial_url = (config_json['initial_url'])
     initial_page_xpath = (config_json['config_links']['initial_page_xpath']['xpath'])
     cat1_xpath = (config_json['config_links']['category1']['xpath'])
@@ -91,18 +103,19 @@ category2_urls = []
 product_urls = []
 products = []
 
-def chr_driver():
+def chr_driver(): 
     op = webdriver.ChromeOptions()
     op.add_experimental_option('excludeSwitches', ['enable-logging']) #removes the annoying DevTools listening on ws://127.0.0.1 message in the terminal (windows)
-    # op.add_argument("window-size=1920x1080")
-    op.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+    op.add_argument("user-agent=Mozilla/5.0 \(Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
+    op.add_argument("--start-maximized")
     # op.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2}) # disable images
-    serv = Service(r'/home/m3wt/vesta/python/scrapers/chromedriver')
+    serv = serv = Service(r'/home/m3wt/vesta/python/scrapers/chromedriver')
     h_mode = input('mode ([h]headless | [f]full): ')
-    op.headless = h_mode == 'h'
-    if not op.headless:
-        if h_mode != 'f':
-            logging.warning('check driver headless option')
+    if h_mode == 'h':
+        op.add_argument('--headless')
+    elif h_mode != 'f':
+        logging.warning('Invalid mode selected, defaulting to full mode')
+
 
     logging.debug('Using Selenium WebDriver with Chrome browser')
     browser = webdriver.Chrome(service=serv, options=op)
@@ -126,7 +139,6 @@ def scrape_initial_page():
             urls.add((url, tmp_cat1))
     return list(urls)
 
-
 def click_view_all(): # OPTIONAL
     try:
         view_all_elem = WebDriverWait(driver, 20).until(
@@ -146,7 +158,6 @@ def get_category_links():
         click_view_all()
         get_cat1_urls(cat1_xpath, tmp_cat1)
 
-
 def get_cat1_urls(xpath, cat1):
     tmp_cat2 = ""
     count = 0
@@ -160,7 +171,7 @@ def get_cat1_urls(xpath, cat1):
             # urls.add((url, tmp_cat1, tmp_cat2))
             category2_urls.append((url, tmp_cat1, tmp_cat2))
             count += 1
-    print(f'Added {count} urls in the category links queue.')
+    print(f'Added {count} urls in the category queue')
 
 def get_prod_links():
     for link in category2_urls:
@@ -174,7 +185,6 @@ def get_prod_links():
         # pagination() #OPTIONAL INFINITE PAGINATION
         get_prod_urls(prod_links_xpath, tmp_cat1, tmp_cat2)
         pagination(tmp_cat1, tmp_cat2)
-
 
 def get_prod_urls(xpath, cat1, cat2):
     urls = set()
@@ -192,7 +202,7 @@ def get_prod_urls(xpath, cat1, cat2):
                     if i not in product_urls:
                         count += 1
                         product_urls.append(i)
-            print(f'Added {count} urls in the product links queue.')
+            print(f'Added {count} urls in the product queue')
             if count == 0:
                 keepscrolling = False
             # Scroll the last element into view using JavaScript
@@ -209,7 +219,6 @@ def get_prod_urls(xpath, cat1, cat2):
             #     continue
         except:
             break
-            # pagination(
    
 def pagination(cat1, cat2):
     next_page_x = next_page_xpath
@@ -226,41 +235,67 @@ def pagination(cat1, cat2):
             # If nextPage_xpath does not exist, break out of the loop
             break
 
-
 def scrape_prod_links():
     global checkVar
-    if TEST_MODE is True:
+
+    if test_mode is True:
         for test_url in TEST_URLS:
             logging.debug(f'Scraping TEST URL: {test_url}')
-            driver.get(test_url)
-            allowCookie()
-            # driver.maximize_window()
-            # sleep(15)
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, image1_xpath))
-            )
-            sleep(3)
-            if variantsCheck() is True:
-                get_variants('test', 'test')
-            else:
-                extract_data('test', 'test')          
+            try:
+                driver.get(test_url)
+                allowCookie()
+                # Existing code for WebDriverWait, cookie consent, and data extraction
+                try:
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, product_code_xpath))
+                    )
+                except TimeoutException:
+                    logging.error(f'Timeout while waiting for image at {test_url}')
+                    continue  # Skip to the next URL in TEST_URLS
+                sleep(3)
+                if variantsCheck() is True:
+                    get_variants('test', 'test')
+                else:
+                    extract_data('test', 'test')
+
+            except selenium.common.exceptions.WebDriverException as e:
+                logging.error(f"WebDriverException encountered while accessing {test_url}: {e}")
+                continue  # Skip to the next URL in TEST_URLS
+
     else:
         for link in product_urls:
             logging.debug(f'Scraping product URL: {link[0]} | category1: {link[1]} | category2: {link[2]}')
-            driver.get(link[0])
-            # WebDriverWait(driver, 10).until(
-            #     EC.presence_of_element_located((By.XPATH, image1_xpath))
-            # )
-            tmp_cat1 = link[1]
-            tmp_cat2 = link[2]
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, image1_xpath))
-            )
-            sleep(3)
-            if variantsCheck() is True:
-                get_variants(tmp_cat1, tmp_cat2)
-            else:
-                extract_data(tmp_cat1, tmp_cat2)
+            try:
+                driver.get(link[0])
+
+                # Existing code for waiting, checking variants, and extracting data
+                try:
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, image1_xpath))
+                    )
+                except TimeoutException:
+                    logging.error(f'Timeout while waiting for image at {link[0]}')
+                    continue  # Skip to the next URL in product_urls
+                sleep(3)
+                tmp_cat1 = link[1]
+                tmp_cat2 = link[2]
+
+                try:
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, product_code_xpath))
+                    )
+                except TimeoutException:
+                    logging.error(f'Timeout while waiting for product code at {link[0]}')
+                    continue  # Skip to the next URL in product_urls
+                sleep(3)
+                if variantsCheck() is True:
+                    get_variants(tmp_cat1, tmp_cat2)
+                else:
+                    extract_data(tmp_cat1, tmp_cat2)
+
+            except selenium.common.exceptions.WebDriverException as e:
+                logging.error(f"WebDriverException encountered while accessing {link[0]}: {e}")
+                continue  # Skip to the next URL in product_urls
 
 def viewMoreSpecs():
     try:
@@ -290,7 +325,6 @@ def variantsCheck():
     # print("Is there variants?", istherevariants)
     return istherevariants
 
-
 def get_element_attribute(xpath, attribute):
     try:
         return driver.find_element(By.XPATH, xpath).get_attribute(attribute)
@@ -315,6 +349,10 @@ def getImages():
             match = re.search(pattern, url)
             if match:
                 images.append(match.group(1))
+            else:
+                images.append("")  # Append empty string if pattern match fails
+        else:
+            images.append("")  # Append empty string if srcset attribute is missing or empty
     return images
 product_counter = 0
 
@@ -429,15 +467,12 @@ def get_variants(cat1, cat2):
     elif count_var == 2:
         process_two_variants(cat1, cat2)
 
-
 def scroll_to_top():
     driver.execute_script("window.scrollTo(0, 0)")
-
 
 def view_more_specs():
     # sleep(1)
     viewMoreSpecs()
-
 
 def process_single_variant(cat1, cat2):
     var_elem1 = get_var_elem1()
@@ -461,7 +496,6 @@ def process_single_variant(cat1, cat2):
         extract_variant1_data(var_elem1)
         extract_data(cat1, cat2)
 
-
 def process_two_variants(cat1, cat2):
     var_elem1 = get_var_elem1()
     var_elem1_lst = get_var_elem1_lst(var_elem1)
@@ -484,28 +518,28 @@ def process_two_variants(cat1, cat2):
             break
 
         extract_variant1_data(var_elem1)
-
         var_elem2 = get_var_elem2()
-
         if not var_elem2:
             break
-
+                
         var_elem2_lst = get_var_elem2_lst(var_elem2)
-
-        for i in range(len(var_elem2_lst)):
-            scroll_to_top()
-
-            click_elem2(var_elem2, i)
-            # view_more_specs()
-
-            var_elem2 = get_var_elem2()
-
-            if not var_elem2:
-                break
-
+        if len(var_elem2_lst) == 0:
+            # If var_elem2_lst is empty, extract data for var_elem2 directly
             extract_variant2_data(var_elem2)
             extract_data(cat1, cat2)
+        else:
+            for i in range(len(var_elem2_lst)):
+                scroll_to_top()
+                click_elem2(var_elem2, i)
+                # view_more_specs()
 
+                var_elem2 = get_var_elem2()
+
+                if not var_elem2:
+                    break
+
+                extract_variant2_data(var_elem2)
+                extract_data(cat1, cat2)
 
 def get_var_elem1():
     try:
@@ -513,10 +547,8 @@ def get_var_elem1():
     except:
         return None
 
-
 def get_var_elem1_lst(var_elem1):
     return var_elem1.find_elements(By.XPATH, "./div[2]/div/@class[not(contains(.,'disabled'))]/parent::div")
-
 
 def click_elem1(var_elem1, i):
     try:
@@ -527,12 +559,20 @@ def click_elem1(var_elem1, i):
         print('disabled element skipping click event')
         return False
 
-
 def extract_variant1_data(var_elem1):
     global tmp_var1, tmp_varLabel1, tmp_swatch_image1
-    tmp_var1 = var_elem1.find_element(By.XPATH, "./div[1]/span[2]").get_attribute("textContent")
-    varLabel1_elem = var_elem1.find_element(By.XPATH, "./div[1]/span[1]")
-    tmp_varLabel1 = varLabel1_elem.get_attribute('textContent')
+    try:
+        tmp_var1 = var_elem1.find_element(By.XPATH, "./div[1]/span[2]").get_attribute("textContent")
+    except:
+        tmp_var1 = ""
+    try: 
+        varLabel1_elem = var_elem1.find_element(By.XPATH, "./div[1]/span[1]")
+    except:
+        varLabel1_elem = ""
+    try:
+        tmp_varLabel1 = varLabel1_elem.get_attribute('textContent')
+    except:
+        tmp_varLabel1
     try:
         tmp_swatch_image1 = var_elem1.find_element(By.XPATH, "./div[2]/div/@class[contains(.,'active')]/parent::div/img").get_attribute('src')
     except:
@@ -558,32 +598,87 @@ def click_elem2(var_elem2, i):
 
 def extract_variant2_data(var_elem2):
     global tmp_var2, tmp_varLabel2, tmp_swatch_image2
-    tmp_var2 = var_elem2.find_element(By.XPATH, "./div[1]/span[2]").get_attribute("textContent")
-    varLabel2_elem = var_elem2.find_element(By.XPATH, "./div[1]/span[1]")
-    tmp_varLabel2 = varLabel2_elem.get_attribute('textContent')
+    try:
+        tmp_var2 = var_elem2.find_element(By.XPATH, "./div[1]/span[2]").get_attribute("textContent")
+    except:
+        tmp_var2 = ""
+    try: 
+        varLabel2_elem = var_elem2.find_element(By.XPATH, "./div[1]/span[1]")
+    except:
+        varLabel2_elem = ""
+    try:
+        tmp_varLabel2 = varLabel2_elem.get_attribute('textContent')
+    except:
+        tmp_varLabel2 =""
     try:
         tmp_swatch_image2 = var_elem2.find_element(By.XPATH, "./div[2]/div/@class[contains(.,'active')]/parent::div/img").get_attribute('src')
     except:
         tmp_swatch_image2 = ""
 ########----------- end of get_variants()
 
+# def save():
+#     #save to csv
+#     with open(f'{filename}.csv', 'w', newline='',encoding='utf-8') as f:
+#         writer = csv.DictWriter(f, fieldnames=product_info.keys())
+#         writer.writeheader()
+#         writer.writerows(products)
+#     logging.info(f"Export to CSV file {filename} is finished.")
+
 def save():
-    #save to csv
-    with open(f'{filename}.csv', 'w', newline='',encoding='utf-8') as f:
+    output_directory = "output"  # Define the subdirectory name
+    
+    # Ensure the output directory exists, create it if necessary
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    
+    # Get today's date in ddmmyyyy format
+    today_date = datetime.datetime.today().strftime("%d%m%Y")
+
+    # Specify the full path to the CSV file in the output directory
+    # Append today's date to the filename
+    csv_file_path = os.path.join(output_directory, f'{filename}_{today_date}.csv')
+    
+    # Save to the CSV file
+    with open(csv_file_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=product_info.keys())
         writer.writeheader()
         writer.writerows(products)
-    logging.info(f"Export to CSV file {filename} is finished.")
+    
+    logging.info(f"Export to CSV file {csv_file_path} is finished.")
 
 def allowCookie():
     cookie_btn = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.XPATH, cookie_xpath))
         )
     cookie_btn.click()
- 
-import time
+
+def play_alarm_sound(sound_file):
+    pygame.mixer.init()
+    pygame.mixer.music.load(sound_file)
+    pygame.mixer.music.play()
+
+    with keyboard.Listener(on_press=on_press) as listener:
+        listener.join()
+
+def on_press(key):
+    pygame.mixer.music.stop()
+    return False
+
+def execution_time(start=None):
+    """
+    Measures the execution time of the script. If start is None, it returns the current time.
+    Otherwise, it returns the time elapsed since start.
+    """
+    if start is None:
+        return time.time()
+    else:
+        end = time.time()
+        elapsed = end - start
+        print(f"Total execution time: {elapsed:.2f} seconds.")
+        return elapsed
 
 if __name__ == '__main__':
+    start_time = execution_time()  # Start the timer
     logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
                         datefmt='%d-%m-%Y:%H:%M:%S',
                         level=logging.DEBUG)
@@ -597,7 +692,7 @@ if __name__ == '__main__':
     connectionpool_logger.setLevel(logging.WARNING)
     driver = chr_driver()
 
-    if TEST_MODE is True:
+    if test_mode is True:
         print('RUNNING ON TEST MODE')
         scrape_prod_links()
         
@@ -613,12 +708,13 @@ if __name__ == '__main__':
             time.sleep(1)
 
         # login(un,pw)
-        # allowCookie()
+        allowCookie()
         category1_urls = scrape_initial_page()
         get_category_links()
         get_prod_links()
         scrape_prod_links()
     save()
+    execution_time(start_time)  # End the timer and print the execution time
+    if play_alarm:
+        play_alarm_sound('/home/m3wt/just_codes/rss/alarm.mp3')
     driver.quit()
-
-

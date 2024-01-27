@@ -1,19 +1,23 @@
 {
     "initial_url": "https://www.moeshome.com/",
+    "test_mode": false ,
+    "filename": "moeshome-dining",
+    "play_alarm": true,
     "config_links": {
         "initial_page_xpath": {
-            "xpath": "//ul[@class='navbar-nav flex flex-row align-items-center']/li[position()<last()]//a"
+            "xpath": "//ul[@class='navbar-nav flex flex-row align-items-center']/li[position()<last()]//a[contains(.,'Dining')]"
         },
         "category1": {
-            "xpath": "//div[@id='product-listing']/div[1]/div[2]/div//a"
+            "xpath": "//div[@id='product-listing']/div[1]/div[2]/div//a[contains(.,'')]"
         },
         "category2": {
             "xpath": ""
         },
         "products": {
-            "xpath": "//div[@itemtype='http://schema.org/ItemList']//a[@class='p-0 product-image-link']"
+            "xpath": "//div[@itemtype='http://schema.org/ItemList']//p[@itemprop='name'][contains(.,'')]/parent::div/parent::div/parent::div/div//a[@class='p-0 product-image-link']"
         },
         "next_page": {
+
             "xpath": "//div[contains(@class,'pagination')]//a[contains(.,'Next')]/@class[not(contains(.,'disabled'))]/parent::a"
         }
     },
