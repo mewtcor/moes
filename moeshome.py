@@ -19,6 +19,7 @@ import time
 import pygame
 from pynput import keyboard
 import os
+import winsound
 
 products = []
 product_info = {}
@@ -107,9 +108,11 @@ def chr_driver():
     op = webdriver.ChromeOptions()
     op.add_experimental_option('excludeSwitches', ['enable-logging']) #removes the annoying DevTools listening on ws://127.0.0.1 message in the terminal (windows)
     op.add_argument("user-agent=Mozilla/5.0 \(Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
-    op.add_argument("--start-maximized")
+    # op.add_argument("--start-maximized")
     # op.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2}) # disable images
-    serv = serv = Service(r'/home/m3wt/vesta/python/scrapers/chromedriver')
+    ublock_origin_path = 'C:\\Users\\mewtc\\work\\vesta\\ublockorigin.crx'
+    op.add_extension(ublock_origin_path)
+    serv = Service(r'C:\Users\mewtc\work\vesta\chromedriver.exe')
     h_mode = input('mode ([h]headless | [f]full): ')
     if h_mode == 'h':
         op.add_argument('--headless')
@@ -715,6 +718,13 @@ if __name__ == '__main__':
         scrape_prod_links()
     save()
     execution_time(start_time)  # End the timer and print the execution time
-    if play_alarm:
-        play_alarm_sound('/home/m3wt/just_codes/rss/alarm.mp3')
+    mp3_file_path = '/path/to/your/mp3file.mp3'  # Specify the path to your MP3 file
+    
+    # Check if play_alarm is True and the MP3 file exists, then play it
+    if play_alarm and os.path.exists(mp3_file_path):
+        # Play the specified MP3 file
+        os.system(f"start {mp3_file_path}")
+    else:
+        # Play the Windows system sound (exclamation sound) if the MP3 file is not found
+        winsound.Beep(500, 1000)  # Frequency and duration
     driver.quit()
