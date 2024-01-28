@@ -14,7 +14,7 @@ import datetime
 import logging
 import re
 import json
-import undetected_chromedriver as uc
+# import undetected_chromedriver as uc
 import time
 import pygame
 from pynput import keyboard
